@@ -1,0 +1,63 @@
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: hello
+  namespace: spark
+spec:
+  type: Python
+  pythonVersion: '3'
+  mode: cluster
+  image: erikperkins/hello:0.0.1
+  imagePullPolicy: Always
+  mainApplicationFile: "local:///app/main.py"
+  sparkVersion: "3.3.2"
+  restartPolicy:
+    type: Never
+  hadoopConf:
+    "fs.s3a.endpoint": "http://minio.minio.svc.cluster.local:9000"
+    "fs.s3a.connection.ssl.enabled": "false"
+    "fs.s3a.fast.upload": "true"
+    "fs.s3a.path.style.access": "true"
+    "fs.s3a.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem"
+    "fs.s3a.aws.credentials.provider": "com.amazonaws.auth.EnvironmentVariableCredentialsProvider"
+  driver:
+    cores: 1
+    coreLimit: "1000m"
+    memory: "512m"
+    labels:
+      version: 3.3.2
+    serviceAccount: spark-operator
+    env:
+      - name: AWS_ACCESS_KEY_ID
+        valueFrom:
+          secretKeyRef:
+            name: minio
+            key: AWS_ACCESS_KEY_ID
+      - name: AWS_SECRET_ACCESS_KEY
+        valueFrom:
+          secretKeyRef:
+            name: minio
+            key: AWS_SECRET_ACCESS_KEY
+  executor:
+    coreRequest: "200m"
+    coreLimit: "400m"
+    instances: 2
+    memory: "512m"
+    env:
+      - name: AWS_ACCESS_KEY_ID
+        valueFrom:
+          secretKeyRef:
+            name: minio
+            key: AWS_ACCESS_KEY_ID
+      - name: AWS_SECRET_ACCESS_KEY
+        valueFrom:
+          secretKeyRef:
+            name: minio
+            key: AWS_SECRET_ACCESS_KEY
+    labels:
+      version: 3.3.2
+  deps:
+    jars:
+      - https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.3.4/hadoop-aws-3.3.4.jar
+      - https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.12.262/aws-java-sdk-bundle-1.12.262.jar
+
