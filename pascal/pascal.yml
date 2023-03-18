@@ -44,8 +44,11 @@ spec:
           image: erikperkins/pascal:latest
           imagePullPolicy: Always
           env:
-            - name: DATABASE_URL
-              value: ecto://postgres@postgres/postgres
+            - name: SECRET_KEY_BASE
+              valueFrom:
+                secretKeyRef:
+                  name: pascal-secret-key-base
+                  key: secretKeyBase
           ports:
             - containerPort: 4000
 ---
