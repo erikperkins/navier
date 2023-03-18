@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argo-github
+  namespace: argo-events
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  rules:
+    - host: argo.cauchy.link
+      http:
+        paths:
+          - path: /webhook/github/elixir(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: github-elixir-eventsource-svc
+                port:
+                  number: 12000
+          - path: /webhook/github/python(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: github-python-eventsource-svc
+                port:
+                  number: 12000
