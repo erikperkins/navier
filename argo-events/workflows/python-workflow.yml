@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  name: pascal
+  name: python
   namespace: argo-events
 spec:
   entrypoint: ci-pipeline
@@ -149,7 +149,7 @@ spec:
             git checkout "{{workflow.parameters.git_sha}}"
     - name: unit-test
       container:
-        image: elixir:1.14.3-slim
+        image: python:3.9-slim-bullseye
         volumeMounts:
           - name: workspace
             mountPath: /mnt/vol
@@ -157,10 +157,8 @@ spec:
         command: ['sh', '-xuce']
         args:
           - |
-            mix local.hex --force
-            mix local.rebar --force
-            mix deps.get
-            mix test --no-color
+            pip3 install -r requirements.txt
+            python3 -m unittest discover test
     - name: build
       container:
         image: gcr.io/kaniko-project/executor:latest
@@ -202,11 +200,9 @@ spec:
           - name: context
             value: "{{inputs.parameters.context}}"
           - name: organisation
-            value: "erikperkins"
-            # "{{workflow.parameters.organisation}}"
+            value: "{{workflow.parameters.organisation}}"
           - name: app_repo
-            value: "pascal"
-            # "{{workflow.parameters.app_repo}}"
+            value: "{{workflow.parameters.app_repo}}"
           - name: git_sha
             value: "{{workflow.parameters.git_sha}}"
           - name: access_token

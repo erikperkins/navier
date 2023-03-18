@@ -1,0 +1,90 @@
+apiVersion: argoproj.io/v1alpha1
+kind: EventSource
+metadata:
+  name: github-python
+  namespace: argo-events
+spec:
+  service:
+    ports:
+      - port: 12000
+        targetPort: 12000
+  github:
+    python:
+      repositories:
+        - owner: erikperkins
+          names:
+            - babinet
+      webhook:
+        endpoint: /push
+        port: "12000"
+        method: POST
+        url: http://argo.cauchy.link/webhook/github/python
+      events:
+        - "push"
+      apiToken:
+        name: github-access
+        key: token
+      insecure: true
+      active: true
+      contentType: json
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Sensor
+metadata:
+  name: github-python-sensor
+  namespace: argo-events
+spec:
+  template:
+    serviceAccountName: operate-workflow-sa
+  dependencies:
+    - name: python-push
+      eventSourceName: github-python
+      eventName: python
+  triggers:
+    - template:
+        conditions: python-push
+        name: python-workflow-trigger
+        argoWorkflow:
+          operation: submit
+          source:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Workflow
+              metadata:
+                generateName: github-python-
+              spec:
+                arguments:
+                  parameters:
+                    - name: repository
+                      value: "organisation/repository"
+                    - name: git_sha
+                      value: "commit"
+                    - name: tag
+                      value: "tag"
+                    - name: organisation
+                      value: "organisation"
+                    - name: app_repo
+                      value: "repo"
+                workflowTemplateRef:
+                  name: python
+          parameters:
+            - src:
+                dependencyName: python-push
+                dataKey: body.repository.full_name
+              dest: spec.arguments.parameters.0.value
+            - src:
+                dependencyName: python-push
+                dataKey: body.after
+              dest: spec.arguments.parameters.1.value
+            - src:
+                dependencyName: python-push
+                dataTemplate: "{{.Input.body.after | substr 0 7}}"
+              dest: spec.arguments.parameters.2.value
+            - src:
+                dependencyName: python-push
+                dataTemplate: "{{.Input.body.repository.full_name | splitList \"/\" | first}}"
+              dest: spec.arguments.parameters.3.value
+            - src:
+                dependencyName: python-push
+                dataTemplate: "{{.Input.body.repository.full_name | splitList \"/\" | last}}"
+              dest: spec.arguments.parameters.4.value
