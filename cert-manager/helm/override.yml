@@ -1,0 +1,8 @@
+installCRDs: true
+
+webhook:
+  securePort: 10260
+
+ingressShim:
+  defaultIssuerName: letsencrypt-prod
+  defaultIssuerKind: ClusterIssuer
