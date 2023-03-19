@@ -1,12 +1,16 @@
-apiVersion: v1
-kind: Pod
+apiVersion: batch/v1
+kind: Job
 metadata:
-  name: ubuntu
-  namespace: kafka
+  name: debug
 spec:
-  containers:
-    - name: ubuntu
-      image: ubuntu
-      command:
-        - sleep
-        - 1d
+  ttlSecondsAfterFinished: 1
+  template:
+    spec:
+      containers:
+        - name: ubuntu
+          image: ubuntu
+          command:
+            - sleep
+            - 1d
+      restartPolicy: Never
+  backoffLimit: 1
