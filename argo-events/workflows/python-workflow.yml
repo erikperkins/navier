@@ -4,6 +4,7 @@ metadata:
   name: python
   namespace: argo-events
 spec:
+  serviceAccountName: operate-workflow-sa
   entrypoint: ci-pipeline
   volumes:
     - name: kaniko
@@ -128,6 +129,43 @@ spec:
                 - name: state
                   value: "failure"
             depends: (build.Failed || build.Errored) || build.Omitted
+          - name: deploy
+            template: deploy
+            when: "{{workflow.parameters.branch}} == master"
+            depends: build.Succeeded
+          - name: deploy-pending
+            template: github-notifier
+            arguments:
+              parameters:
+                - name: context
+                  value: "Deploy"
+                - name: description
+                  value: "Deploy artifact"
+                - name: state
+                  value: "pending"
+            when: "{{workflow.parameters.branch}} == master"
+          - name: deploy-success
+            template: github-notifier
+            arguments:
+              parameters:
+                - name: context
+                  value: "Deploy"
+                - name: description
+                  value: "Deploy artifact"
+                - name: state
+                  value: "success"
+            depends: deploy.Succeeded
+          - name: deploy-failure
+            template: github-notifier
+            arguments:
+              parameters:
+                - name: context
+                  value: "Deploy"
+                - name: description
+                  value: "Deploy artifact"
+                - name: state
+                  value: "failure"
+            depends: (deploy.Failed || deploy.Errored) || deploy.Omitted
     - name: clone
       container:
         image: alpine/git:latest
@@ -176,6 +214,20 @@ spec:
           - "--dockerfile=Dockerfile"
           - "--destination=$(REPOSITORY):$(TAG)"
           - "--destination=$(REPOSITORY):latest"
+    - name: deploy
+      container:
+        image: bitnami/kubectl
+        env:
+          - name: APP_REPO
+            value: "{{workflow.parameters.app_repo}}"
+          - name: REPOSITORY
+            value: "{{workflow.parameters.repository}}"
+          - name: TAG
+            value: "{{workflow.parameters.tag}}"
+        command: ['sh', '-xuce']
+        args:
+          - |
+            kubectl -n mer set image deployment/$APP_REPO $APP_REPO=$REPOSITORY:$TAG
     - name: github-notifier
       inputs:
         parameters:
