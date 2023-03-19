@@ -227,7 +227,7 @@ spec:
         command: ['sh', '-xuce']
         args:
           - |
-            kubectl -n mer set image deployment/$APP_REPO $APP_REPO=$REPOSITORY:$TAG
+            kubectl -n $APP_REPO set image deployment/$APP_REPO $APP_REPO=$REPOSITORY:$TAG
     - name: github-notifier
       inputs:
         parameters:
