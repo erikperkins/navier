@@ -1354,7 +1354,13 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/backend-protocol: HTTPS
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    cert-manager.io/acme-challenge-type: http01
 spec:
+  tls:
+    - hosts:
+        - argo.cauchy.link
+      secretName: letsencrypt-prod
   rules:
     - host: argo.cauchy.link
       http:
