@@ -92,5 +92,5 @@ spec:
               dest: spec.arguments.parameters.4.value
             - src:
                 dependencyName: elixir-push
-                dataTemplate: "{{.Input.body.ref | splitList \"/\" | last}}"
+                dataTemplate: "{{.Input.body.ref | splitList \"/\" | last | quote}}"
               dest: spec.arguments.parameters.5.value
