@@ -65,6 +65,8 @@ spec:
                       value: "organisation"
                     - name: app_repo
                       value: "repo"
+                    - name: branch
+                      value: "branch"
                 workflowTemplateRef:
                   name: python
           parameters:
@@ -88,3 +90,7 @@ spec:
                 dependencyName: python-push
                 dataTemplate: "{{.Input.body.repository.full_name | splitList \"/\" | last}}"
               dest: spec.arguments.parameters.4.value
+            - src:
+                dependencyName: python-push
+                dataTemplate: "{{.Input.body.ref | splitList \"/\" | last}}"
+              dest: spec.arguments.parameters.5.value

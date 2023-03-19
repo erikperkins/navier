@@ -144,9 +144,7 @@ spec:
         command: ['sh', '-xuce']
         args:
           - |
-            git clone -v https://$GITHUB_TOKEN@github.com/"{{workflow.parameters.repository}}" app
-            cd app
-            git checkout "{{workflow.parameters.git_sha}}"
+            git clone -b "{{workflow.parameters.branch}}" --single-branch -v https://$GITHUB_TOKEN@github.com/"{{workflow.parameters.repository}}" app
     - name: unit-test
       container:
         image: python:3.9-slim-bullseye
