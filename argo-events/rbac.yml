@@ -40,10 +40,12 @@ metadata:
 rules:
   - apiGroups:
       - apps
+      - sparkoperator.k8s.io
     verbs:
       - "*"
     resources:
       - deployments
+      - sparkapplications
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
