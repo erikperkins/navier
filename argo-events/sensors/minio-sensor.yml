@@ -44,22 +44,12 @@ spec:
               metadata:
                 generateName: minio-put-orders-
               spec:
-                entrypoint: whalesay
                 arguments:
                   parameters:
                     - name: message
                       value: PLACEHOLDER
-                templates:
-                  - name: whalesay
-                    inputs:
-                      parameters:
-                        - name: message
-                    container:
-                      command:
-                        - cowsay
-                      image: docker/whalesay:latest
-                      args:
-                        -  "{{inputs.parameters.message}}"
+                workflowTemplateRef:
+                  name: spark-hello
           parameters:
             - src:
                 dependencyName: minio-orders
