@@ -1,0 +1,108 @@
+apiVersion: argoproj.io/v1alpha1
+kind: EventSource
+metadata:
+  name: minio-event-source
+  namespace: argo-events
+spec:
+  minio:
+    orders:
+      bucket:
+        name: orders
+      endpoint: minio.minio.svc.cluster.local:9000
+      events:
+        - s3:ObjectCreated:Put
+      insecure: true
+      accessKey:
+        name: minio
+        key: minioAccessKey
+      secretKey:
+        name: minio
+        key: minioSecretKey
+    models:
+      bucket:
+        name: models
+      endpoint: minio.minio.svc.cluster.local:9000
+      events:
+        - s3:ObjectCreated:Put
+      insecure: true
+      accessKey:
+        name: minio
+        key: minioAccessKey
+      secretKey:
+        name: minio
+        key: minioSecretKey
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Sensor
+metadata:
+  name: minio-sensor
+  namespace: argo-events
+spec:
+  template:
+    serviceAccountName: operate-workflow-sa
+  dependencies:
+    - name: minio-orders
+      eventSourceName: minio-event-source
+      eventName: orders
+    - name: minio-models
+      eventSourceName: minio-event-source
+      eventName: models
+  triggers:
+    - template:
+        conditions: minio-orders
+        name: minio-spark-trigger
+        argoWorkflow:
+          operation: submit
+          source:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Workflow
+              metadata:
+                generateName: minio-put-orders-
+              spec:
+                arguments:
+                  parameters:
+                    - name: message
+                      value: PLACEHOLDER
+                workflowTemplateRef:
+                  name: spark-hello
+          parameters:
+            - src:
+                dependencyName: minio-orders
+                dataKey: notification.0.s3.object.key
+              dest: spec.arguments.parameters.0.value
+    - template:
+        conditions: minio-models
+        name: minio-whalesay-trigger
+        argoWorkflow:
+          operation: submit
+          source:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Workflow
+              metadata:
+                generateName: minio-put-models-
+              spec:
+                entrypoint: whalesay
+                ttlStrategy:
+                  secondsAfterSuccess: 30
+                  secondsAfterFailure: 30
+                arguments:
+                  parameters:
+                    - name: message
+                      value: PLACEHOLDER
+                templates:
+                  - name: whalesay
+                    inputs:
+                      parameters:
+                        - name: message
+                    container:
+                      command:
+                        - cowsay
+                      image: docker/whalesay:latest
+                      args: ["{{inputs.parameters.message}}"]
+          parameters:
+            - src:
+                dependencyName: minio-models
+                dataKey: notification.0.s3.object.key
+              dest: spec.arguments.parameters.0.value
