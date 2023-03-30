@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mer
+  labels:
+    name: mer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: bossut
+  name: bossut
+  namespace: mer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bossut
+  template:
+    metadata:
+      labels:
+        app: bossut
+    spec:
+      containers:
+        - image: erikperkins/bossut:latest
+          name: bossut
+          securityContext:
+            allowPrivilegeEscalation: true
+          env:
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio
+                  key: minioAccessKey
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio
+                  key: minioSecretKey
