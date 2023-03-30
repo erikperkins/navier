@@ -25,3 +25,10 @@ spec:
                 name: github-python-eventsource-svc
                 port:
                   number: 12000
+          - path: /webhook/github/python-microservice(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: github-python-microservice-eventsource-svc
+                port:
+                  number: 12000

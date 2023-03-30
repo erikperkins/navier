@@ -1,0 +1,95 @@
+apiVersion: argoproj.io/v1alpha1
+kind: EventSource
+metadata:
+  name: github-python-microservice
+  namespace: argo-events
+spec:
+  service:
+    ports:
+      - port: 12000
+        targetPort: 12000
+  github:
+    microservice:
+      repositories:
+        - owner: erikperkins
+          names:
+            - bossut
+      webhook:
+        endpoint: /push
+        port: "12000"
+        method: POST
+        url: http://argo.cauchy.link/webhook/github/python-microservice
+      events:
+        - "push"
+      apiToken:
+        name: github-access
+        key: token
+      insecure: true
+      active: true
+      contentType: json
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Sensor
+metadata:
+  name: github-python-microservice-sensor
+  namespace: argo-events
+spec:
+  template:
+    serviceAccountName: operate-workflow-sa
+  dependencies:
+    - name: python-microservice-push
+      eventSourceName: github-python-microservice
+      eventName: microservice
+  triggers:
+    - template:
+        name: python-microservice-workflow-trigger
+        argoWorkflow:
+          operation: submit
+          source:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Workflow
+              metadata:
+                generateName: github-python-microservice-
+              spec:
+                arguments:
+                  parameters:
+                    - name: repository
+                      value: "organisation/repository"
+                    - name: git_sha
+                      value: "commit"
+                    - name: tag
+                      value: "tag"
+                    - name: organisation
+                      value: "organisation"
+                    - name: app_repo
+                      value: "repo"
+                    - name: branch
+                      value: "branch"
+                workflowTemplateRef:
+                  name: python-microservice
+          parameters:
+            - src:
+                dependencyName: python-microservice-push
+                dataKey: body.repository.full_name
+              dest: spec.arguments.parameters.0.value
+            - src:
+                dependencyName: python-microservice-push
+                dataKey: body.after
+              dest: spec.arguments.parameters.1.value
+            - src:
+                dependencyName: python-microservice-push
+                dataTemplate: "{{.Input.body.after | substr 0 7}}"
+              dest: spec.arguments.parameters.2.value
+            - src:
+                dependencyName: python-microservice-push
+                dataTemplate: "{{.Input.body.repository.full_name | splitList \"/\" | first}}"
+              dest: spec.arguments.parameters.3.value
+            - src:
+                dependencyName: python-microservice-push
+                dataTemplate: "{{.Input.body.repository.full_name | splitList \"/\" | last}}"
+              dest: spec.arguments.parameters.4.value
+            - src:
+                dependencyName: python-microservice-push
+                dataTemplate: "{{.Input.body.ref | splitList \"/\" | last | quote}}"
+              dest: spec.arguments.parameters.5.value

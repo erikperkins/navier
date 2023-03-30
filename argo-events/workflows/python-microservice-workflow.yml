@@ -1,0 +1,267 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: python-microservice
+  namespace: argo-events
+spec:
+  serviceAccountName: operate-workflow-sa
+  entrypoint: ci-pipeline
+  volumes:
+    - name: kaniko
+      secret:
+        secretName: kaniko
+  volumeClaimTemplates:
+    - metadata:
+        name: workspace
+      spec:
+        accessModes: [ ReadWriteOnce ]
+        resources:
+          requests:
+            storage: 1Gi
+  ttlStrategy:
+    secondsAfterSuccess: 300
+    secondsAfterFailure: 300
+  templates:
+    - name: ci-pipeline
+      dag:
+        tasks:
+          - name: clone
+            template: clone
+          - name: clone-pending
+            template: github-notifier
+            arguments:
+              parameters:
+                - name: context
+                  value: "Clone"
+                - name: description
+                  value: "Clone repository"
+                - name: state
+                  value: "pending"
+          - name: clone-success
+            template: github-notifier
+            arguments:
+              parameters:
+                - name: context
+                  value: "Clone"
+                - name: description
+                  value: "Clone repository"
+                - name: state
+                  value: "success"
+            depends: clone.Succeeded
+          - name: clone-failure
+            template: github-notifier
+            arguments:
+              parameters:
+                - name: context
+                  value: "Clone"
+                - name: description
+                  value: "Clone repository"
+                - name: state
+                  value: "failure"
+            depends: (clone.Failed || clone.Errored)
+          - name: unit-test
+            template: unit-test
+            depends: clone.Succeeded
+          - name: unit-test-pending
+            template: github-notifier
+            arguments:
+              parameters:
+                - name: context
+                  value: "Test"
+                - name: description
+                  value: "Run unit tests"
+                - name: state
+                  value: "pending"
+          - name: unit-test-success
+            template: github-notifier
+            arguments:
+              parameters:
+                - name: context
+                  value: "Test"
+                - name: description
+                  value: "Run unit tests"
+                - name: state
+                  value: "success"
+            depends: unit-test.Succeeded
+          - name: unit-test-failure
+            template: github-notifier
+            arguments:
+              parameters:
+                - name: context
+                  value: "Test"
+                - name: description
+                  value: "Run unit tests"
+                - name: state
+                  value: "failure"
+            depends: (unit-test.Failed || unit-test.Errored) || unit-test.Omitted
+          - name: build
+            template: build
+            depends: unit-test.Succeeded
+          - name: build-pending
+            template: github-notifier
+            arguments:
+              parameters:
+                - name: context
+                  value: "Build"
+                - name: description
+                  value: "Build and deliver artifact"
+                - name: state
+                  value: "pending"
+          - name: build-success
+            template: github-notifier
+            arguments:
+              parameters:
+                - name: context
+                  value: "Build"
+                - name: description
+                  value: "Build and deliver artifact"
+                - name: state
+                  value: "success"
+            depends: build.Succeeded
+          - name: build-failure
+            template: github-notifier
+            arguments:
+              parameters:
+                - name: context
+                  value: "Build"
+                - name: description
+                  value: "Build and deliver artifact"
+                - name: state
+                  value: "failure"
+            depends: (build.Failed || build.Errored) || build.Omitted
+          - name: deploy
+            template: deploy
+            when: "{{workflow.parameters.branch}} == master"
+            depends: build.Succeeded
+          - name: deploy-pending
+            template: github-notifier
+            arguments:
+              parameters:
+                - name: context
+                  value: "Deploy"
+                - name: description
+                  value: "Deploy artifact"
+                - name: state
+                  value: "pending"
+            when: "{{workflow.parameters.branch}} == master"
+          - name: deploy-success
+            template: github-notifier
+            arguments:
+              parameters:
+                - name: context
+                  value: "Deploy"
+                - name: description
+                  value: "Deploy artifact"
+                - name: state
+                  value: "success"
+            depends: deploy.Succeeded
+          - name: deploy-failure
+            template: github-notifier
+            arguments:
+              parameters:
+                - name: context
+                  value: "Deploy"
+                - name: description
+                  value: "Deploy artifact"
+                - name: state
+                  value: "failure"
+            depends: (deploy.Failed || deploy.Errored) || deploy.Omitted
+    - name: clone
+      container:
+        image: alpine/git:latest
+        volumeMounts:
+          - name: workspace
+            mountPath: /mnt/vol
+        workingDir: /mnt/vol
+        env:
+          - name: GITHUB_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: github-access
+                key: token
+        command: ['sh', '-xuce']
+        args:
+          - |
+            git clone -b "{{workflow.parameters.branch}}" --single-branch -v https://$GITHUB_TOKEN@github.com/"{{workflow.parameters.repository}}" app
+    - name: unit-test
+      container:
+        image: python:3.9-slim-bullseye
+        volumeMounts:
+          - name: workspace
+            mountPath: /mnt/vol
+        workingDir: /mnt/vol/app
+        command: ['sh', '-xuce']
+        args:
+          - |
+            pip3 install -r requirements.txt
+            python3 -m unittest discover test
+    - name: build
+      container:
+        image: gcr.io/kaniko-project/executor:latest
+        volumeMounts:
+          - name: workspace
+            mountPath: /workspace
+          - name: kaniko
+            mountPath: /kaniko/.docker
+        workingDir: /workspace/app
+        env:
+          - name: REPOSITORY
+            value: "{{workflow.parameters.repository}}"
+          - name: TAG
+            value: "{{workflow.parameters.tag}}"
+        args:
+          - "--context=/workspace/app"
+          - "--dockerfile=Dockerfile"
+          - "--destination=$(REPOSITORY):$(TAG)"
+          - "--destination=$(REPOSITORY):latest"
+    - name: deploy
+      container:
+        image: bitnami/kubectl
+        env:
+          - name: APP_REPO
+            value: "{{workflow.parameters.app_repo}}"
+          - name: REPOSITORY
+            value: "{{workflow.parameters.repository}}"
+          - name: TAG
+            value: "{{workflow.parameters.tag}}"
+        command: ['sh', '-xuce']
+        args:
+          - |
+            kubectl -n mer set image deployment/$APP_REPO $APP_REPO=$REPOSITORY:$TAG
+    - name: github-notifier
+      inputs:
+        parameters:
+          - name: context
+          - name: state
+          - name: target_url
+            value: "https://argo.cauchy.link/workflows/{{workflow.namespace}}/{{workflow.name}}"
+          - name: description
+            value: "None"
+      container:
+        image: ghcr.io/sendible-labs/ci-github-notifier:stable
+        imagePullPolicy: Always
+        env:
+          - name: state
+            value: "{{inputs.parameters.state}}"
+          - name: target_url
+            value: "{{inputs.parameters.target_url}}"
+          - name: description
+            value: "{{inputs.parameters.description}}"
+          - name: context
+            value: "{{inputs.parameters.context}}"
+          - name: organisation
+            value: "{{workflow.parameters.organisation}}"
+          - name: app_repo
+            value: "{{workflow.parameters.app_repo}}"
+          - name: git_sha
+            value: "{{workflow.parameters.git_sha}}"
+          - name: access_token
+            valueFrom:
+              secretKeyRef:
+                name: github-access
+                key: token
+        resources:
+          requests:
+            memory: 8Mi
+            cpu: 1m
+        activeDeadlineSeconds: 300
