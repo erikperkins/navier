@@ -26,7 +26,7 @@ echo "<dockerhub username>:<dockerhub token>" | base64
 ```
 $ cd spark
 $ helm repo add spark-operator https://googlecloudplatform.github.io/spark-on-k8s-operator
-$ helm pull spark-operator/spark-operator ./helm
+$ helm pull --untar spark-operator/spark-operator ./helm
 $ helm install spark-operator ./helm \
     -f helm/override.yml \
     --namespace spark \
@@ -37,7 +37,7 @@ $ helm install spark-operator ./helm \
 ```
 $ cd sentry
 $ helm repo add sentry https://sentry-kubernetes.github.io/charts
-$ helm pull sentry/sentry ./helm
+$ helm pull --untar sentry/sentry ./helm
 $ helm install sentry ./helm \
     -f helm/override.ywl \
     --set filestore.s3.accessKey=<minio username> \
@@ -54,10 +54,22 @@ Set `installCRDs = true` in `override.yml`.
 ```
 $ cd cert-manager
 $ helm repo add jetstack https://charts.jetstack.io
-$ helm pull jetstack/cert-manager ./helm
+$ helm pull --untar jetstack/cert-manager ./helm
 $ mv helm/cert-manager helm/
 $ helm install cert-manager ./helm \
     -f helm/override.yml
     --namespace cert-manager
+    --create-namespace
+```
+
+### Prometheus
+```
+$ cd prometheus
+$ helm repo add prometheus https://prometheus-community.github.io/helm-charts
+$ helm pull --untar prometheus/prometheus
+$ mv prometheus helm
+$ helm install prometheus ./helm \
+    -f helm/override.yml \
+    --namespace prometheus \
     --create-namespace
 ```
