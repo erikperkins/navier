@@ -8,18 +8,25 @@ server:
       cert-manager.io/acme-challenge-type: http01
     hosts:
        - prometheus.cauchy.link
-
     path: /
-    # pathType is only for k8s >= 1.18
     pathType: Prefix
     tls:
        - secretName: letsencrypt-prod
          hosts:
            - prometheus.cauchy.link
-
     persistentVolume:
       enabled: false
       size: 1Gi
+
+serverFiles:
+  prometheus.yml:
+    scrape_configs:
+      - job_name: minio-job
+        metrics_path: /minio/v2/metrics/cluster
+        scheme: http
+        static_configs:
+          - targets:
+              - minio.minio.svc.cluster.local:9000
 
 alertmanager:
   enabled: false

@@ -32,6 +32,13 @@ spec:
           - -c
           args:
           - minio server /data --console-address :9090
+          env:
+            - name: MINIO_PROMETHEUS_AUTH_TYPE
+              value: public
+            - name: MINIO_PROMETHEUS_URL
+              value: http://prometheus-server.prometheus.svc.cluster.local
+            - name: MINIO_PROMETHEUS_JOB_ID
+              value: minio-job
           ports:
             - containerPort: 8888
           volumeMounts:

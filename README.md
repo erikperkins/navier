@@ -73,3 +73,8 @@ $ helm install prometheus ./helm \
     --namespace prometheus \
     --create-namespace
 ```
+To add a `scrape_config`, include the configuration in `prometheus/helm/override.yml`, and run
+```
+$ cd prometheus
+$ helm --namespace prometheus upgrade -f helm/override.yml prometheus ./helm
+```
