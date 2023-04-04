@@ -39,11 +39,33 @@ spec:
         - name: mlflow
           image: ghcr.io/mlflow/mlflow
           imagePullPolicy: IfNotPresent
-          command: [mlflow]
+          command: [/bin/bash]
           args:
-            - server
-            - --host
-            - 0.0.0.0
+            - -c
+            - "pip install boto3 psycopg2-binary; mlflow server --host 0.0.0.0 --artifacts-destination s3://models --backend-store-uri postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres.mlflow.svc.cluster.local:5432/mlflow"
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: postgresUser
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: postgresPassword
+            - name: MLFLOW_S3_ENDPOINT_URL
+              value: http://minio.minio.svc.cluster.local:9000
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: minio
+                  key: minioAccessKey
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio
+                  key: minioSecretKey
           ports:
             - containerPort: 5000
 ---
