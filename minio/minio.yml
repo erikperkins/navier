@@ -5,31 +5,42 @@ metadata:
   labels:
     name: minio
 ---
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  labels:
-    app: minio
   name: minio
   namespace: minio
 spec:
-  securityContext:
-    fsGroup: 1000
-  containers:
-  - name: minio
-    image: quay.io/minio/minio:latest
-    command:
-    - /bin/bash
-    - -c
-    args: 
-    - minio server /data --console-address :9090
-    volumeMounts:
-    - mountPath: /data
-      name: minio
-  volumes:
-  - name: minio
-    persistentVolumeClaim:
-      claimName: minio
+  selector:
+    matchLabels:
+      app: minio
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: minio
+          image: quay.io/minio/minio:latest
+          imagePullPolicy: IfNotPresent
+          command:
+          - /bin/bash
+          - -c
+          args:
+          - minio server /data --console-address :9090
+          ports:
+            - containerPort: 8888
+          volumeMounts:
+            - name: minio
+              mountPath: /data
+      volumes:
+        - name: minio
+          persistentVolumeClaim:
+            claimName: minio
 ---
 apiVersion: v1
 kind: PersistentVolume
