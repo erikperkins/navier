@@ -1,0 +1,2 @@
+kafkaServer:
+  - kafka-service.kafka.svc.cluster.local:9092
