@@ -1,2 +1,16 @@
 kafkaServer:
   - kafka-service.kafka.svc.cluster.local:9092
+
+prometheus:
+  serviceMonitor:
+    enabled: true
+    namespace: monitoring
+    interval: "30s"
+    # If serviceMonitor is enabled and you want prometheus to automatically register
+    # target using serviceMonitor, add additionalLabels with prometheus release name
+    # e.g. If you have deployed kube-prometheus-stack with release name kube-prometheus
+    # then additionalLabels will be
+    # additionalLabels:
+    #   release: kube-prometheus
+    additionalLabels: {}
+    targetLabels: []
