@@ -76,6 +76,7 @@ $ helm pull --untar prometheus/kube-prometheus-stack
 $ mv kube-prometheus-stack helm
 $ helm install prometheus ./helm \
     -f helm/override.yml \
+    --set grafana.adminPassword=<grafana password>
     --namespace prometheus \
     --create-namespace
 ```
