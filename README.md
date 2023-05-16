@@ -61,3 +61,8 @@ $ helm install cert-manager ./helm \
     --namespace cert-manager
     --create-namespace
 ```
+Once the Helm chart has been installed, configure `cert-manager` by applying the `clusterissuer.yml` 
+manifest. *This step is necessary in order to generate valid certificates.*
+```
+$ kubectl apply -f clusterissuer.yml
+```
