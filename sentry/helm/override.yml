@@ -34,18 +34,18 @@ hooks:
   dbInit:
     resources:
       limits:
-        memory: 2Gi
+        memory: 1Gi
       requests:
         cpu: 500m
-        memory: 2Gi
+        memory: 1Gi
   snubaInit:
     resources:
       limits:
         cpu: 500m
-        memory: 2Gi
+        memory: 1Gi
       requests:
         cpu: 400m
-        memory: 2Gi
+        memory: 1Gi
 ingress:
   alb:
     httpRedirect: false
