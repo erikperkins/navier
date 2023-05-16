@@ -66,3 +66,22 @@ manifest. *This step is necessary in order to generate valid certificates.*
 ```
 $ kubectl apply -f clusterissuer.yml
 ```
+
+### Prometheus
+```
+$ cd prometheus
+$ helm repo add prometheus https://prometheus-community.github.io/helm-charts
+$ helm repo update
+$ helm pull --untar prometheus/kube-prometheus-stack
+$ mv kube-prometheus-stack helm
+$ helm install prometheus ./helm \
+    -f helm/override.yml \
+    --set grafana.adminPassword=<grafana password>
+    --namespace prometheus \
+    --create-namespace
+```
+To add a `scrape_config`, include the configuration in `prometheus/helm/override.yml`, and run
+```
+$ cd prometheus
+$ helm --namespace prometheus upgrade -f helm/override.yml prometheus ./helm
+```
