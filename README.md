@@ -39,7 +39,7 @@ $ cd sentry
 $ helm repo add sentry https://sentry-kubernetes.github.io/charts
 $ helm pull sentry/sentry ./helm
 $ helm install sentry ./helm \
-    -f helm/override.ywl \
+    -f helm/override.yml \
     --set filestore.s3.accessKey=<minio username> \
     --set filestore.s3.secretKey=<minio password> \
     --namespace sentry
