@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mer
+  labels:
+    name: mer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: mariotte
+  name: mariotte
+  namespace: mer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mariotte
+  template:
+    metadata:
+      labels:
+        app: mariotte
+    spec:
+      containers:
+        - image: erikperkins/mariotte:latest
+          name: mariotte
+          securityContext:
+            allowPrivilegeEscalation: true
+          env:
+            - name: MODEL_URI
+              value: runs:/f2228be7171143f6aa878a0aaef73e09/model
