@@ -205,10 +205,6 @@ spec:
             mountPath: /kaniko/.docker
         workingDir: /workspace/app
         resources:
-          requests:
-            memory: "1Gi"
-          limits:
-            memory: "1Gi"
         env:
           - name: REPOSITORY
             value: "{{workflow.parameters.repository}}"

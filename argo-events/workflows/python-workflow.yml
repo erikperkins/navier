@@ -214,6 +214,8 @@ spec:
           - "--dockerfile=Dockerfile"
           - "--destination=$(REPOSITORY):$(TAG)"
           - "--destination=$(REPOSITORY):latest"
+          - "--compressed-caching=false"
+          - "--cleanup"
     - name: deploy
       container:
         image: bitnami/kubectl
