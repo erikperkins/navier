@@ -27,6 +27,3 @@ spec:
           name: mariotte
           securityContext:
             allowPrivilegeEscalation: true
-          env:
-            - name: MODEL_URI
-              value: runs:/f2228be7171143f6aa878a0aaef73e09/model
