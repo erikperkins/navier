@@ -42,7 +42,6 @@ spec:
       eventName: python
   triggers:
     - template:
-        conditions: python-push
         name: python-workflow-trigger
         argoWorkflow:
           operation: submit
