@@ -42,7 +42,6 @@ spec:
       eventName: elixir
   triggers:
     - template:
-        conditions: elixir-push
         name: elixir-workflow-trigger
         argoWorkflow:
           operation: submit
