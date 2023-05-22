@@ -29,6 +29,7 @@ alertmanager:
 
 grafana:
   enabled: true
+  replicas: 1
   defaultDashboardsTimezone: utc
   ingress:
     enabled: true
@@ -45,6 +46,13 @@ grafana:
       - secretName: letsencrypt-prod
         hosts:
           - grafana.cauchy.link
+  grafana.ini:
+    auth:
+      disable_login_form: false
+    auth.anonymous:
+      enabled: true
+      org_name: Main Org.
+      org_role: Editor
   sidecar:
     datasources:
       url: http://prometheus-kube-prometheus-prometheus.prometheus.svc.cluster.local:9090
